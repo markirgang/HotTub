@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Hot Tub Smart Controller</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    
+    <!-- Top App Bar -->
+    <div class="card header">
+      <div class="brand">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M12 2v4M6 4v2M18 4v2M4 14a8 8 0 0 0 16 0M4 14h16M7 19v2M17 19v2"/>
+        </svg>
+        <span>Spa Controller</span>
+      </div>
+      <div id="statusBadge" class="status-badge">Connecting...</div>
+    </div>
+
+    <!-- Temperature Card -->
+    <div class="card temp-hero">
+      <div id="waterTemp" class="temp-value">--&deg;F</div>
+      <div id="targetTemp" class="temp-target-label">Target: --&deg;F</div>
+      <div class="temp-actions">
+        <button class="btn-circle btn-minus" onclick="adjustTemp(-1)">-</button>
+        <button class="btn-circle btn-plus" onclick="adjustTemp(1)">+</button>
+      </div>
+    </div>
+
+    <!-- Quick Action Grid -->
+    <div class="grid-2x2">
+      <!-- Jets 1 Button -->
+      <div id="tileJet1" class="tile-btn" onclick="toggleJet1()">
+        <span class="tile-title">Jets 1</span>
+        <span id="jet1StateText" class="tile-status">OFF</span>
+        <span id="jet1Timer" style="font-size:12px; color:var(--text-muted);">--</span>
+      </div>
+
+      <!-- Jets 2 Button -->
+      <div id="tileJet2" class="tile-btn" onclick="toggleJet2()">
+        <span class="tile-title">Jets 2 (Aux)</span>
+        <span id="jet2StateText" class="tile-status">OFF</span>
+        <span style="font-size:12px; color:var(--text-muted);">Boost Pump</span>
+      </div>
+
+      <!-- Air Blower Button -->
+      <div id="tileBlower" class="tile-btn" onclick="toggleBlower()">
+        <span class="tile-title">Air Blower</span>
+        <span id="blowerStateText" class="tile-status">OFF</span>
+        <span id="blowerTimer" style="font-size:12px; color:var(--text-muted);">--</span>
+      </div>
+
+      <!-- Spa Light Button -->
+      <div id="tileLight" class="tile-btn" onclick="toggleLight()">
+        <span class="tile-title">Spa Light</span>
+        <span id="lightStateText" class="tile-status">OFF</span>
+        <span style="font-size:12px; color:var(--text-muted);">LED Underwater</span>
+      </div>
+    </div>
+
+    <!-- Blower Variable Speed PWM Slider -->
+    <div class="card slider-container">
+      <div class="slider-header">
+        <span>Blower Variable Speed (PWM)</span>
+        <span id="blowerPctLabel">0%</span>
+      </div>
+      <input id="sliderBlower" type="range" min="0" max="100" value="0" oninput="onBlowerSlider(this.value)">
+    </div>
+
+    <!-- Operating Modes -->
+    <div class="card">
+      <div style="font-size: 14px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;">Operating Mode</div>
+      <div class="modes-bar">
+        <button id="modeBtn0" class="mode-btn" onclick="setMode(0)">Standard</button>
+        <button id="modeBtn1" class="mode-btn" onclick="setMode(1)">Eco</button>
+        <button id="modeBtn2" class="mode-btn" onclick="setMode(2)">Party</button>
+        <button id="modeBtn3" class="mode-btn" onclick="setMode(3)">Clean</button>
+      </div>
+    </div>
+
+    <!-- Live Hardware Diagnostics & Safety -->
+    <div class="card">
+      <div style="font-size: 15px; font-weight: 700; color: var(--primary); margin-bottom: 12px;">Safety & Diagnostics</div>
+      <div class="info-row">
+        <span class="info-label">Flow Switch (Heater Interlock):</span>
+        <span id="valFlow" class="info-val" style="color:var(--accent-green)">OK</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Heater Element Status:</span>
+        <span id="valHeater" class="info-val">OFF</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">High-Limit Thermal Safety:</span>
+        <span id="valLimit" class="info-val" style="color:var(--accent-green)">OK (Closed)</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Water Level Float Sensor:</span>
+        <span id="valLevel" class="info-val">OK</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Ozone / UV Sanitizer:</span>
+        <span id="valOzone" class="info-val">OFF</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">System Clock / Schedule:</span>
+        <span id="valTime" class="info-val">--:--</span>
+      </div>
+    </div>
+
+    <!-- Bluetooth Direct Client Link -->
+    <div class="card" style="text-align:center;">
+      <a href="/ble_app.html" style="color:var(--primary); font-weight:700; text-decoration:none; font-size:15px; display:inline-flex; align-items:center; gap:8px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M14.83 7.76l-2.42-2.42V11.2l2.42-3.44zM12.41 12.8v5.86l2.42-2.42-2.42-3.44zM7 8.41L10.59 12 7 15.59 8.41 17l3.59-3.59V22h2l5-5-3.59-3.59 3.59-3.59-5-5h-2v8.59L8.41 7 7 8.41z"/>
+        </svg>
+        Open Web Bluetooth Direct Controller &rarr;
+      </a>
+    </div>
+
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

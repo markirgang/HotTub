@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Spa Controller - Web Bluetooth Direct</title>
+  <link rel="stylesheet" href="/style.css">
+  <style>
+    .ble-bar { background: #1c283c; border-radius: 12px; padding: 14px; display: flex; justify-content: space-between; align-items: center; }
+    .btn-ble { background: linear-gradient(135deg, #0077b6, #0096c7); color: #fff; border: none; padding: 10px 18px; border-radius: 10px; font-weight: 700; cursor: pointer; }
+    .btn-ble:disabled { opacity: 0.5; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    
+    <div class="card header">
+      <div class="brand">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M14.83 7.76l-2.42-2.42V11.2l2.42-3.44zM12.41 12.8v5.86l2.42-2.42-2.42-3.44zM7 8.41L10.59 12 7 15.59 8.41 17l3.59-3.59V22h2l5-5-3.59-3.59 3.59-3.59-5-5h-2v8.59L8.41 7 7 8.41z"/>
+        </svg>
+        <span>Spa BLE Controller</span>
+      </div>
+      <div id="bleStatus" class="status-badge" style="background:rgba(231,76,60,0.15); color:var(--accent-red);">Disconnected</div>
+    </div>
+
+    <!-- BLE Connection Box -->
+    <div class="card ble-bar">
+      <div>
+        <div style="font-weight:700;">Direct Bluetooth Link</div>
+        <div style="font-size:12px; color:var(--text-muted);">Connect without WiFi / router</div>
+      </div>
+      <button id="btnConnect" class="btn-ble" onclick="connectBluetooth()">Connect BLE</button>
+    </div>
+
+    <!-- Temperature Card -->
+    <div class="card temp-hero">
+      <div id="waterTemp" class="temp-value">--&deg;F</div>
+      <div id="targetTemp" class="temp-target-label">Target: --&deg;F</div>
+      <div class="temp-actions">
+        <button class="btn-circle btn-minus" onclick="adjustTemp(-1)">-</button>
+        <button class="btn-circle btn-plus" onclick="adjustTemp(1)">+</button>
+      </div>
+    </div>
+
+    <!-- Quick Action Grid -->
+    <div class="grid-2x2">
+      <div id="tileJet1" class="tile-btn" onclick="toggleJet1()">
+        <span class="tile-title">Jets 1</span>
+        <span id="jet1Text" class="tile-status">OFF</span>
+      </div>
+
+      <div id="tileJet2" class="tile-btn" onclick="toggleJet2()">
+        <span class="tile-title">Jets 2</span>
+        <span id="jet2Text" class="tile-status">OFF</span>
+      </div>
+
+      <div id="tileBlower" class="tile-btn" onclick="toggleBlower()">
+        <span class="tile-title">Air Blower</span>
+        <span id="blowerText" class="tile-status">OFF</span>
+      </div>
+
+      <div id="tileLight" class="tile-btn" onclick="toggleLight()">
+        <span class="tile-title">Spa Light</span>
+        <span id="lightText" class="tile-status">OFF</span>
+      </div>
+    </div>
+
+    <!-- Diagnostics -->
+    <div class="card">
+      <div style="font-size:14px; font-weight:700; color:var(--primary); margin-bottom:8px;">Live Telemetry via BLE GATT</div>
+      <div class="info-row">
+        <span class="info-label">Flow Interlock:</span>
+        <span id="bleFlow" class="info-val">--</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Heater Element:</span>
+        <span id="bleHeater" class="info-val">--</span>
+      </div>
+      <div class="info-row">
+        <span class="info-label">Heater Fault / Alarms:</span>
+        <span id="bleError" class="info-val">OK</span>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const SERVICE_UUID    = '4fafc201-1fb5-459e-8fcc-c5c9c331914b';
+    const CHAR_TELEM_UUID = 'beb5483e-36e1-4688-b7f5-ea07361b26a8';
+    const CHAR_CMD_UUID   = 'beb5483f-36e1-4688-b7f5-ea07361b26a9';
+
+    let bleDevice = null;
+    let telemChar = null;
+    let cmdChar = null;
+    let spaData = { water_temp_f: 100, target_temp_f: 102, pump1: 0, pump2: 0, blower: 0, light: false, flow_ok: true, heater: 0 };
+
+    async function connectBluetooth() {
+      if (!navigator.bluetooth) {
+        alert('Web Bluetooth is not supported on this browser! Use Google Chrome, Edge, or Bluefy (iOS).');
+        return;
+      }
+
+      try {
+        document.getElementById('btnConnect').innerText = 'Searching...';
+        bleDevice = await navigator.bluetooth.requestDevice({
+          filters: [{ name: 'HotTub-Controller' }],
+          optionalServices: [SERVICE_UUID]
+        });
+
+        bleDevice.addEventListener('gattserverdisconnected', onDisconnected);
+        const server = await bleDevice.gatt.connect();
+        const service = await server.getPrimaryService(SERVICE_UUID);
+
+        telemChar = await service.getCharacteristic(CHAR_TELEM_UUID);
+        cmdChar = await service.getCharacteristic(CHAR_CMD_UUID);
+
+        await telemChar.startNotifications();
+        telemChar.addEventListener('characteristicvaluechanged', (e) => {
+          const dec = new TextDecoder('utf-8');
+          const jsonStr = dec.decode(e.target.value);
+          try {
+            spaData = JSON.parse(jsonStr);
+            renderUI();
+          } catch(err){}
+        });
+
+        document.getElementById('bleStatus').innerText = 'BLE Connected';
+        document.getElementById('bleStatus').style.background = 'rgba(46,204,113,0.15)';
+        document.getElementById('bleStatus').style.color = 'var(--accent-green)';
+        document.getElementById('btnConnect').innerText = 'Connected';
+        document.getElementById('btnConnect').disabled = true;
+
+      } catch (err) {
+        console.error(err);
+        document.getElementById('btnConnect').innerText = 'Connect BLE';
+      }
+    }
+
+    function onDisconnected() {
+      document.getElementById('bleStatus').innerText = 'Disconnected';
+      document.getElementById('bleStatus').style.background = 'rgba(231,76,60,0.15)';
+      document.getElementById('bleStatus').style.color = 'var(--accent-red)';
+      document.getElementById('btnConnect').innerText = 'Connect BLE';
+      document.getElementById('btnConnect').disabled = false;
+    }
+
+    async function sendBleCmd(obj) {
+      if (!cmdChar) return;
+      const enc = new TextEncoder();
+      const bytes = enc.encode(JSON.stringify(obj));
+      try {
+        await cmdChar.writeValue(bytes);
+      } catch(err) {
+        console.error('BLE send error:', err);
+      }
+    }
+
+    function renderUI() {
+      document.getElementById('waterTemp').innerHTML = spaData.water_temp_f + '&deg;F';
+      document.getElementById('targetTemp').innerHTML = 'Target: ' + spaData.target_temp_f + '&deg;F';
+
+      // Jets 1
+      const j1 = document.getElementById('tileJet1');
+      j1.className = 'tile-btn' + (spaData.pump1 > 0 ? (spaData.pump1 === 2 ? ' active-blue' : ' active-green') : '');
+      document.getElementById('jet1Text').innerText = spaData.pump1 === 2 ? 'HIGH' : (spaData.pump1 === 1 ? 'LOW' : 'OFF');
+
+      // Jets 2
+      const j2 = document.getElementById('tileJet2');
+      j2.className = 'tile-btn' + (spaData.pump2 > 0 ? ' active-blue' : '');
+      document.getElementById('jet2Text').innerText = spaData.pump2 > 0 ? 'ON' : 'OFF';
+
+      // Blower
+      const blw = document.getElementById('tileBlower');
+      blw.className = 'tile-btn' + (spaData.blower > 0 ? ' active-purple' : '');
+      document.getElementById('blowerText').innerText = spaData.blower === 3 ? 'HIGH' : (spaData.blower === 2 ? 'MED' : (spaData.blower === 1 ? 'LOW' : 'OFF'));
+
+      // Light
+      const lgt = document.getElementById('tileLight');
+      lgt.className = 'tile-btn' + (spaData.light ? ' active-orange' : '');
+      document.getElementById('lightText').innerText = spaData.light ? 'ON' : 'OFF';
+
+      // Diagnostics
+      document.getElementById('bleFlow').innerText = spaData.flow_ok ? 'OK (Continuous)' : 'FAULT (NO FLOW)';
+      document.getElementById('bleFlow').style.color = spaData.flow_ok ? 'var(--accent-green)' : 'var(--accent-red)';
+      document.getElementById('bleHeater').innerText = spaData.heater === 2 ? 'HEATING' : (spaData.heater === 1 ? 'PRE-FLOW (15s)' : 'OFF');
+      document.getElementById('bleError').innerText = spaData.error || 'OK';
+    }
+
+    function adjustTemp(delta) {
+      const cur = spaData.target_temp_f || 100;
+      const target = Math.min(104, Math.max(80, cur + delta));
+      spaData.target_temp_f = target;
+      renderUI();
+      sendBleCmd({ temp: target });
+    }
+
+    function toggleJet1() {
+      const next = (spaData.pump1 === 0) ? 1 : ((spaData.pump1 === 1) ? 2 : 0);
+      spaData.pump1 = next;
+      renderUI();
+      sendBleCmd({ jet1: next });
+    }
+
+    function toggleJet2() {
+      const next = (spaData.pump2 > 0) ? 0 : 2;
+      spaData.pump2 = next;
+      renderUI();
+      sendBleCmd({ jet2: next });
+    }
+
+    function toggleBlower() {
+      const next = (spaData.blower === 0) ? 1 : ((spaData.blower === 1) ? 2 : ((spaData.blower === 2) ? 3 : 0));
+      spaData.blower = next;
+      renderUI();
+      sendBleCmd({ blower: next });
+    }
+
+    function toggleLight() {
+      spaData.light = !spaData.light;
+      renderUI();
+      sendBleCmd({ light: spaData.light });
+    }
+  </script>
+</body>
+</html>
