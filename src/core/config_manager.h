@@ -1,7 +1,14 @@
 #pragma once
 #include <Arduino.h>
 #include <Preferences.h>
+
+#if __has_include("include/config.h")
+#include "include/config.h"
+#elif __has_include("../config.h")
+#include "../config.h"
+#else
 #include "config.h"
+#endif
 
 enum class TemperatureUnit : uint8_t {
     FAHRENHEIT = 0,

@@ -4,7 +4,14 @@
 #include <BLEServer.h>
 #include <BLEUtils.h>
 #include <BLE2902.h>
+
+#if __has_include("include/config.h")
+#include "include/config.h"
+#elif __has_include("../config.h")
+#include "../config.h"
+#else
 #include "config.h"
+#endif
 
 class BLESpaController : public BLEServerCallbacks, public BLECharacteristicCallbacks {
 public:

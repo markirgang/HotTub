@@ -1,7 +1,23 @@
 #pragma once
 #include <Arduino.h>
+
+#if __has_include("include/lv_conf.h")
+#include "include/lv_conf.h"
+#elif __has_include("../lv_conf.h")
+#include "../lv_conf.h"
+#elif __has_include("lv_conf.h")
+#include "lv_conf.h"
+#endif
+
 #include <lvgl.h>
+
+#if __has_include("include/config.h")
+#include "include/config.h"
+#elif __has_include("../config.h")
+#include "../config.h"
+#else
 #include "config.h"
+#endif
 
 class LVGLUIManager {
 public:

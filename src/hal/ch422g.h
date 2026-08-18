@@ -1,6 +1,13 @@
 #pragma once
 #include <Arduino.h>
+
+#if __has_include("include/config.h")
+#include "include/config.h"
+#elif __has_include("../config.h")
+#include "../config.h"
+#else
 #include "config.h"
+#endif
 
 class CH422GDriver {
 public:

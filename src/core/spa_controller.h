@@ -1,11 +1,49 @@
 #pragma once
 #include <Arduino.h>
+
+#if __has_include("include/config.h")
+#include "include/config.h"
+#elif __has_include("../config.h")
+#include "../config.h"
+#else
 #include "config.h"
+#endif
+
+#if __has_include("src/core/config_manager.h")
+#include "src/core/config_manager.h"
+#elif __has_include("config_manager.h")
 #include "config_manager.h"
-#include "hal/mcp23017.h"
-#include "hal/temp_sensor.h"
-#include "hal/pwm_controller.h"
+#endif
+
+#if __has_include("src/hal/mcp23017.h")
+#include "src/hal/mcp23017.h"
+#elif __has_include("../hal/mcp23017.h")
+#include "../hal/mcp23017.h"
+#elif __has_include("mcp23017.h")
+#include "mcp23017.h"
+#endif
+
+#if __has_include("src/hal/temp_sensor.h")
+#include "src/hal/temp_sensor.h"
+#elif __has_include("../hal/temp_sensor.h")
+#include "../hal/temp_sensor.h"
+#elif __has_include("temp_sensor.h")
+#include "temp_sensor.h"
+#endif
+
+#if __has_include("src/hal/pwm_controller.h")
+#include "src/hal/pwm_controller.h"
+#elif __has_include("../hal/pwm_controller.h")
+#include "../hal/pwm_controller.h"
+#elif __has_include("pwm_controller.h")
+#include "pwm_controller.h"
+#endif
+
+#if __has_include("src/core/scheduler.h")
+#include "src/core/scheduler.h"
+#elif __has_include("scheduler.h")
 #include "scheduler.h"
+#endif
 
 enum class HeaterState : uint8_t {
     HEATER_OFF = 0,

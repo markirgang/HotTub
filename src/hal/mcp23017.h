@@ -1,6 +1,13 @@
 #pragma once
 #include <Arduino.h>
+
+#if __has_include("include/config.h")
+#include "include/config.h"
+#elif __has_include("../config.h")
+#include "../config.h"
+#else
 #include "config.h"
+#endif
 
 // MCP23017 Register Addresses (IOCON.BANK = 0)
 #define MCP_REG_IODIRA      0x00
