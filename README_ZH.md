@@ -47,7 +47,37 @@ Arduino_ESP32RGBPanel *rgbpanel = new Arduino_ESP32RGBPanel(
 Arduino_RGB_Display *gfx = new Arduino_RGB_Display(TFT_WIDTH, TFT_HEIGHT, rgbpanel);
 ```
 
-完整示例程序及配置文件请参考 [examples/Arduino/01_RGB_Display/](examples/Arduino/01_RGB_Display/)。
+完整示例程序、配置文件及 `platformio.ini` 请参考 [examples/Arduino/01_RGB_Display/](examples/Arduino/01_RGB_Display/)。
+
+### ⚙️ PlatformIO 开发板配置 (`platformio.ini`)
+> [!IMPORTANT]
+> 切勿在 PlatformIO 中使用 `board = esp32`（标准 ESP32）。微雪 ESP32-S3-Touch-LCD-7B 采用的是 **ESP32-S3** 芯片。如果填入 `board = esp32`，PlatformIO 会提示开发板参数错误。
+
+请务必使用正确的 ESP32-S3 开发板定义 (`board = esp32-s3-devkitc-1`) 以及 8MB OPI PSRAM 配置：
+
+```ini
+[env:esp32s3_arduino]
+platform = espressif32
+board = esp32-s3-devkitc-1
+framework = arduino
+monitor_speed = 115200
+
+board_build.mcu = esp32s3
+board_build.f_cpu = 240000000L
+board_build.f_flash = 80000000L
+board_build.flash_mode = qio
+board_build.flash_size = 16MB
+board_build.arduino.memory_type = qio_opi
+board_build.psram_type = opi
+
+build_flags = 
+    -DBOARD_HAS_PSRAM
+    -DARDUINO_USB_CDC_ON_BOOT=1
+    -DARDUINO_USB_MODE=1
+
+lib_deps = 
+    moononournation/GFX Library for Arduino@^1.4.9
+```
 
 ---
 

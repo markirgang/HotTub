@@ -49,7 +49,37 @@ Arduino_ESP32RGBPanel *rgbpanel = new Arduino_ESP32RGBPanel(
 Arduino_RGB_Display *gfx = new Arduino_RGB_Display(TFT_WIDTH, TFT_HEIGHT, rgbpanel);
 ```
 
-An example sketch and header are available under [examples/Arduino/01_RGB_Display/](examples/Arduino/01_RGB_Display/).
+An example sketch, header, and `platformio.ini` are available under [examples/Arduino/01_RGB_Display/](examples/Arduino/01_RGB_Display/).
+
+### ⚙️ PlatformIO Board Configuration (`platformio.ini`)
+> [!IMPORTANT]
+> Do **NOT** set `board = esp32` in PlatformIO. The Waveshare ESP32-S3-Touch-LCD-7B uses an **ESP32-S3** chip. Setting `board = esp32` will fail with an invalid/wrong board error.
+
+Use the correct ESP32-S3 board definition (`board = esp32-s3-devkitc-1`) and 8MB OPI PSRAM options:
+
+```ini
+[env:esp32s3_arduino]
+platform = espressif32
+board = esp32-s3-devkitc-1
+framework = arduino
+monitor_speed = 115200
+
+board_build.mcu = esp32s3
+board_build.f_cpu = 240000000L
+board_build.f_flash = 80000000L
+board_build.flash_mode = qio
+board_build.flash_size = 16MB
+board_build.arduino.memory_type = qio_opi
+board_build.psram_type = opi
+
+build_flags = 
+    -DBOARD_HAS_PSRAM
+    -DARDUINO_USB_CDC_ON_BOOT=1
+    -DARDUINO_USB_MODE=1
+
+lib_deps = 
+    moononournation/GFX Library for Arduino@^1.4.9
+```
 
 ---
 
